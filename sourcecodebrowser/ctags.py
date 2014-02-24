@@ -2,6 +2,45 @@ import os
 import subprocess
 import shlex
 
+# Languages with the same internal name as ctags
+SUPPORTED_LANGUAGES = [
+  'ASP',
+  'awk',
+  'C',
+  'C#',
+  'C++',
+  'Cobol',
+  'Eiffel',
+  'Erlang',
+  'Go',
+  'HTML',
+  'Java',
+  'JavaScript',
+  'Lua',
+  'Matlab',
+  'Pascal',
+  'Perl',
+  'PHP',
+  'Python',
+  'Scheme',
+  'sh',
+  'SQL',
+  'Tcl',
+  'Verilog',
+  'VHDL',
+  'Yacc',
+]
+
+# Languages with a different internal name to ctags
+OVERRIDE_LANGUAGES = {
+  'DOS Batch': 'DosBatch',
+  'Fortran 95': 'Fortran',
+  'Makefile': 'Make',
+  'Objective Caml': 'OCaml',
+  'Objective-C': 'ObjectiveC',
+  'Python 3': 'Python',
+}
+
 def get_ctags_version(executable=None):
     """
     Return the text output from the --version option to ctags or None if ctags

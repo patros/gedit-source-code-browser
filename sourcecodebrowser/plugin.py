@@ -212,13 +212,17 @@ class SourceTree(Gtk.VBox):
         if uri and line:
             self.emit("tag-activated", (uri, line))
 
-    def parse_file(self, path, uri):
+    def parse_file(self, path, uri, language=None):
         """
         Parse symbols out of a file using exhuberant ctags. The path is the local
         filename to pass to ctags, and the uri is the actual URI as known by
-        Gedit. They would be different for remote files.
+        Gedit. They would be different for remote files. Language is the ctags
+        language override and is optional.
         """
-        command = "ctags -nu --fields=fiKlmnsSzt -f - '%s'" % path
+        if language is None:
+          command = "ctags -nu --fields=fiKlmnsSzt -f - '%s'" % path
+        else:
+          command = "ctags -nu --fields=fiKlmnsSzt --language-force=%s -f - '%s'" % (language, path)
         #self._log.debug(command)
         try:
             parser = ctags.Parser()
@@ -401,12 +405,19 @@ class SourceCodeBrowserPlugin(GObject.Object, Gedit.WindowActivatable, PeasGtk.C
             location = document.get_location()
             if location:
                 uri = location.get_uri()
+                language = document.get_language()
+                if language is not None:
+                  language = language.get_name()
+                  if language in ctags.OVERRIDE_LANGUAGES:
+                    language = ctags.OVERRIDE_LANGUAGES[language]
+                  elif language not in ctags.SUPPORTED_LANGUAGES:
+                    language = None
                 self._log.debug("Loading %s...", uri)
                 if uri is not None:
                     if uri[:7] == "file://":
                         # use get_parse_name() to get path in UTF-8
                         filename = location.get_parse_name() 
-                        self._sourcetree.parse_file(filename, uri)
+                        self._sourcetree.parse_file(filename, uri, language)
                     elif self.load_remote_files:
                         basename = location.get_basename()
                         fd, filename = tempfile.mkstemp('.'+basename)
@@ -417,7 +428,7 @@ class SourceCodeBrowserPlugin(GObject.Object, Gedit.WindowActivatable, PeasGtk.C
                         os.close(fd)
                         while Gtk.events_pending():
                             Gtk.main_iteration()
-                        self._sourcetree.parse_file(filename, uri)
+                        self._sourcetree.parse_file(filename, uri, language)
                         os.unlink(filename)
                     self._loaded_document = document
         self._is_loaded = True
